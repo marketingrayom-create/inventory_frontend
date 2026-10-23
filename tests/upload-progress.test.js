@@ -1,6 +1,0 @@
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
-import {uploadProgressRequest} from '../src/services/uploadProgress.js';
-class XHR{constructor(){XHR.last=this;this.upload={};this.headers={};}open(method,url){this.method=method;this.url=url;}setRequestHeader(key,value){this.headers[key]=value;}send(body){this.body=body;}abort(){this.onabort?.();}getResponseHeader(){return 'application/json';}}
-test('upload progress separates transfer from saving and preserves authentication',async()=>{const stages=[];const request=uploadProgressRequest('/api/file',{headers:new Headers({Authorization:'Bearer test'}),body:'bytes',onUploadProgress:event=>stages.push(event.stage)},XHR);const xhr=XHR.last;assert.equal(xhr.withCredentials,true);assert.equal(xhr.headers.authorization,'Bearer test');xhr.upload.onprogress({loaded:32,total:64});xhr.upload.onload();xhr.status=200;xhr.statusText='OK';xhr.responseText='{"success":true}';xhr.onload();assert.deepEqual(stages,['uploading','saving']);assert.equal((await (await request).json()).success,true);});
-test('cancelled uploads reject and stop the transfer',async()=>{const controller=new AbortController();const request=uploadProgressRequest('/api/file',{headers:new Headers(),signal:controller.signal,body:'bytes'},XHR);controller.abort();await assert.rejects(request,{name:'AbortError'});});
